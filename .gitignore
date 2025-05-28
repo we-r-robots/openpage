@@ -1,0 +1,28 @@
+# ────────── Node / Astro ──────────
+node_modules/
+dist/
+.build/
+.cache/
+.idea/
+.vscode/
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# ────────── Environment / secrets ──────────
+.env
+.env.*            # e.g. .env.production
+
+# ────────── Astro output (preview server) ──────────
+astro-preview/
+
+# ────────── Docker artifacts ──────────
+# (compose and Dockerfile stay under version control)
+docker-build/
+*.tar
+*.img
+
+# ────────── OS miscellany ──────────
+Thumbs.db
+ehthumbs.db
