@@ -1,0 +1,50 @@
+name: build-and-deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Build & tag image
+      - name: Build container
+        run: |
+          docker build -t $IMAGE:latest ./astro-site
+          docker tag   $IMAGE:latest $IMAGE:${GITHUB_SHA::7}
+
+      # Push to GHCR
+      - name: Push image
+        run: |
+          echo "${{ secrets.CR_PAT }}" | \
+            docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker push $IMAGE:latest
+          docker push $IMAGE:${GITHUB_SHA::7}
+
+      # Deploy on EC2
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            docker compose -f ~/openpage/docker-compose.yml pull web
+            docker compose -f ~/openpage/docker-compose.yml up -d web
+            docker image prune -f --filter "until=240h"

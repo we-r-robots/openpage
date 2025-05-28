@@ -1,47 +1,24 @@
-
 version: "3.9"
 
-
-
 services:
-
   proxy:
-
     image: caddy:2-alpine
-
+    container_name: openpage-proxy
     restart: unless-stopped
-
     ports:
-
       - "80:80"
-
     volumes:
-
       - ./Caddyfile:/etc/caddy/Caddyfile
-
       - caddy_data:/data
-
       - caddy_config:/config
 
-
-
   web:
-
-    build: ./astro-site
-
-    command: ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "3000"]
-
+    image: ghcr.io/we-r-robots/openpage:latest
+    container_name: openpage-web
     expose:
-
       - "3000"
-
     restart: unless-stopped
 
-
-
 volumes:
-
   caddy_data:
-
   caddy_config:
-
