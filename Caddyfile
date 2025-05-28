@@ -1,0 +1,15 @@
+:80 {
+    encode gzip zstd
+
+    # Any requests for JSON blobs go straight to S3 through CloudFront.
+    # If you use the CloudFront path as designed, the reverse_proxy below
+    # never sees these, so this stanza is optional.
+    handle_path /openpage-data/* {
+        reverse_proxy https://openpage-data.s3.amazonaws.com
+    }
+
+    # Everything else goes to the Astro server on port 3000
+    reverse_proxy web:3000
+
+    file_server
+}
