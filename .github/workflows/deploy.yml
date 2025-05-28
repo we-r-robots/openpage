@@ -10,41 +10,28 @@ jobs:
     permissions:
       contents: read
       packages: write
-
     env:
       IMAGE: ghcr.io/${{ github.repository }}
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      # Build & tag image
-      - name: Build container
-        run: |
-          docker build -t $IMAGE:latest ./astro-site
-          docker tag   $IMAGE:latest $IMAGE:${GITHUB_SHA::7}
-
-      # Push to GHCR
-      - name: Push image
-        run: |
-          echo "${{ secrets.CR_PAT }}" | \
-            docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - run: docker build -t $IMAGE:latest ./astro-site
+      - run: docker tag $IMAGE:latest $IMAGE:${GITHUB_SHA::7}
+      - run: echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - run: |
           docker push $IMAGE:latest
           docker push $IMAGE:${GITHUB_SHA::7}
-
-      # Deploy on EC2
-      - name: Deploy on EC2
-        uses: appleboy/ssh-action@v0.1.6
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ec2-user
-          key: ${{ secrets.EC2_KEY }}
-          script: |
-            docker compose -f ~/openpage/docker-compose.yml pull web
-            docker compose -f ~/openpage/docker-compose.yml up -d web
-            docker image prune -f --filter "until=240h"
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - run: >
+          aws ssm send-command
+          --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
+          --document-name AWS-RunShellScript
+          --parameters 'commands=["cd ~/openpage","docker compose pull web","docker compose up -d web","docker image prune -f --filter \"until=240h\""]'
+          --comment "OpenPage roll-out"
+          --output text

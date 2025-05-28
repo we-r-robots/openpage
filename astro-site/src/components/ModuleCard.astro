@@ -1,0 +1,8 @@
+---
+export interface Props { title: string; href: string; }
+const { title, href } = Astro.props;
+---
+<a href={href} class="block rounded-xl p-4 shadow bg-white dark:bg-gray-800 hover:shadow-lg transition">
+  <h2 class="text-lg font-semibold mb-1">{title}</h2>
+  <slot />
+</a>
